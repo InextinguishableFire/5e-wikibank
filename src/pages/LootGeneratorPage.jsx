@@ -138,4 +138,72 @@ export default function LootGeneratorPage() {
 
           <div className="mt-6">
             {!hasGeneratedLoot ? (
-              <StatusMessage
+              <StatusMessage>
+                Choose a rarity and click “Generate {LOOT_COUNT} items” to roll loot.
+              </StatusMessage>
+            ) : generatedLoot.length === 0 ? (
+              <StatusMessage>
+                No <span className="capitalize">{lootRarity}</span> items are available in your
+                currently enabled sources.
+              </StatusMessage>
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-12">
+                {/* Left column: clickable list of generated items */}
+                <div className="lg:col-span-5">
+                  {generatedLoot.length < LOOT_COUNT && (
+                    <p className="mb-2 text-xs text-stone-500">
+                      Showing all {generatedLoot.length} available {lootRarity} items.
+                    </p>
+                  )}
+
+                  <ul className="divide-y divide-stone-200 overflow-hidden rounded border border-stone-300 bg-white shadow-sm">
+                    {generatedLoot.map((item) => {
+                      const isActive = selectedId === item.id
+                      return (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleSelectItem(item)}
+                            className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${
+                              isActive ? 'bg-red-50' : 'hover:bg-stone-50'
+                            }`}
+                          >
+                            <div className="min-w-0">
+                              <p
+                                className={`truncate font-medium ${
+                                  isActive ? 'text-red-900' : 'text-stone-900'
+                                }`}
+                              >
+                                {item.name}
+                              </p>
+                              <p className="truncate text-xs capitalize text-stone-500">
+                                {item.type}
+                                {item.attunement ? ' · Attunement' : ''}
+                              </p>
+                            </div>
+                            <span className="shrink-0 text-xs uppercase text-stone-400">
+                              {item.source}
+                            </span>
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+
+                {/* Right column: click-selected item preview panel */}
+                <div className="lg:col-span-7">
+                  {loadingDetailId === activeItem?.id && !activeItem?.description ? (
+                    <StatusMessage>Loading item details…</StatusMessage>
+                  ) : (
+                    <ItemPreviewPanel item={activeItem} />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </section>
+  )
+}
