@@ -4,9 +4,9 @@ A fast, dark-mode-ready digital reference and tabletop utility for **Dungeons & 
 
 Built with **React (Vite), React Router, Tailwind CSS** and a small **Node/Express** API.
 
-- **Live site:** _add link here_
-- **Live API:** _add link here_
-- **Repository:** _add link here_
+- **Live site:** https://5e-wikibank.vercel.app
+- **Live API:**  https://fivee-wikibank.onrender.com/api / feats, items ...
+- **Repository:** https://github.com/InextinguishableFire/5e-wikibank
 
 ---
 
