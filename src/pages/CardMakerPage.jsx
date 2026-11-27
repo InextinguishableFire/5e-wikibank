@@ -67,7 +67,7 @@ function getSubtitle(entry, cardType) {
       .join(' • ')
   }
   if (cardType === 'spells') {
-    return [entry.levelLabel, entry.castingTime, entry.range].filter(Boolean).join(' • ')
+    return entry.levelLabel || ''
   }
   return [
     entry.sourceName || entry.source,
@@ -233,12 +233,31 @@ function FrontCard({ entry, cardType, iconSrc, onOverflowCalculated }) {
         aria-hidden="true"
         className="pointer-events-none absolute top-[2mm] right-[2mm] h-[9mm] w-[9mm] object-contain opacity-50 select-none"
       />
-
       <header className="relative z-10 border-b border-red-800 pr-[10mm] pb-[1mm]">
         <h2 className="text-[10pt] leading-tight font-bold text-red-900">{entry.name}</h2>
         <p className="text-[6.5pt] capitalize text-stone-500">{getSubtitle(entry, cardType)}</p>
       </header>
 
+      {cardType === 'spells' && (
+        <div className="relative z-10 space-y-[0.3mm] border-b border-red-800/40 py-[1mm] text-[6pt] leading-tight text-stone-700">
+          <p>
+            <strong className="font-semibold text-red-900">Casting Time:</strong>{' '}
+            {entry.castingTime || '—'}
+          </p>
+          <p>
+            <strong className="font-semibold text-red-900">Range:</strong> {entry.range || '—'}
+          </p>
+          <p>
+            <strong className="font-semibold text-red-900">Components:</strong>{' '}
+            {entry.components || '—'}
+          </p>
+          <p>
+            <strong className="font-semibold text-red-900">Duration:</strong>{' '}
+            {entry.duration || '—'}
+          </p>
+        </div>
+      )}
+      
       <div
         ref={bodyRef}
         className="relative z-10 mt-[1.5mm] flex-1 space-y-[1.2mm] overflow-hidden text-[7pt] leading-[1.25] text-stone-800"
