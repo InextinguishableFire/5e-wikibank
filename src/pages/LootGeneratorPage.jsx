@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useItems } from '../context/ItemsContext.jsx'
+import { useInteraction } from '../context/InteractionContext.jsx'
 import { fetchItem } from '../services/api.js'
+import ItemPreviewPanel from '../components/ItemPreviewPanel.jsx'
 import StatusMessage from '../components/StatusMessage.jsx'
 
 const LOOT_COUNT = 8
@@ -16,6 +18,8 @@ function pickRandomItems(pool, count) {
 }
 
 export default function LootGeneratorPage() {
+  const { clearInspect } = useInteraction()
+
   const {
     loading,
     error,
@@ -31,8 +35,7 @@ export default function LootGeneratorPage() {
     setHasGeneratedLoot,
   } = useItems()
 
-  // Tracks which item is currently hovered and caches full item details by id
-  const [hoveredId, setHoveredId] = useState(null)
+  const [selectedId, setSelectedId] = useState(null)
   const [detailsCache, setDetailsCache] = useState({})
   const [loadingDetailId, setLoadingDetailId] = useState(null)
 
@@ -45,18 +48,20 @@ export default function LootGeneratorPage() {
     setLootRarity(event.target.value)
     setGeneratedLoot([])
     setHasGeneratedLoot(false)
-    setHoveredId(null)
+    setSelectedId(null)
+    clearInspect()
   }
 
   function handleGenerate() {
     setGeneratedLoot(pickRandomItems(matchingPool, LOOT_COUNT))
     setHasGeneratedLoot(true)
-    setHoveredId(null)
+    setSelectedId(null)
+    clearInspect()
   }
 
-  // On hover, show immediately if we already have the description; otherwise fetch & cache it
-  async function handleHoverItem(item) {
-    setHoveredId(item.id)
+  async function handleSelectItem(item) {
+    clearInspect()
+    setSelectedId(item.id)
 
     if (detailsCache[item.id] || Array.isArray(item.description)) {
       return
@@ -74,19 +79,10 @@ export default function LootGeneratorPage() {
   }
 
   const activeItem = useMemo(() => {
-    if (!hoveredId) return null
-    const base = generatedLoot.find((item) => item.id === hoveredId)
-    return detailsCache[hoveredId] ?? base ?? null
-  }, [hoveredId, generatedLoot, detailsCache])
-
-  const facts = activeItem
-    ? [
-        activeItem.damage && `Damage: ${activeItem.damage}`,
-        activeItem.ac && `AC: ${activeItem.ac}`,
-        activeItem.weight && `Weight: ${activeItem.weight} lb.`,
-        activeItem.value && `Value: ${activeItem.value}`,
-      ].filter(Boolean)
-    : []
+    if (!selectedId) return null
+    const base = generatedLoot.find((item) => item.id === selectedId)
+    return detailsCache[selectedId] ?? base ?? null
+  }, [selectedId, generatedLoot, detailsCache])
 
   const activeSourceCount = sources.length - excludedKeys.length
 
@@ -142,117 +138,4 @@ export default function LootGeneratorPage() {
 
           <div className="mt-6">
             {!hasGeneratedLoot ? (
-              <StatusMessage>
-                Choose a rarity and click “Generate {LOOT_COUNT} items” to roll loot.
-              </StatusMessage>
-            ) : generatedLoot.length === 0 ? (
-              <StatusMessage>
-                No <span className="capitalize">{lootRarity}</span> items are available in your
-                currently enabled sources.
-              </StatusMessage>
-            ) : (
-              <div className="grid gap-6 lg:grid-cols-12">
-                {/* Left column: compact list of generated items */}
-                <div className="lg:col-span-5">
-                  {generatedLoot.length < LOOT_COUNT && (
-                    <p className="mb-2 text-xs text-stone-500">
-                      Showing all {generatedLoot.length} available {lootRarity} items.
-                    </p>
-                  )}
-
-                  <ul className="divide-y divide-stone-200 overflow-hidden rounded border border-stone-300 bg-white shadow-sm">
-                    {generatedLoot.map((item) => {
-                      const isActive = hoveredId === item.id
-                      return (
-                        <li
-                          key={item.id}
-                          onMouseEnter={() => handleHoverItem(item)}
-                          className={`transition-colors ${
-                            isActive ? 'bg-red-50' : 'hover:bg-stone-50'
-                          }`}
-                        >
-                          <Link
-                            to={`/items/${item.id}`}
-                            className="flex items-center justify-between gap-3 px-4 py-3"
-                          >
-                            <div className="min-w-0">
-                              <p
-                                className={`truncate font-medium ${
-                                  isActive ? 'text-red-900' : 'text-stone-900'
-                                }`}
-                              >
-                                {item.name}
-                              </p>
-                              <p className="truncate text-xs capitalize text-stone-500">
-                                {item.type}
-                                {item.attunement ? ' · Attunement' : ''}
-                              </p>
-                            </div>
-                            <span className="shrink-0 text-xs text-stone-400">{item.source}</span>
-                          </Link>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-
-                {/* Right column: live hover preview popup */}
-                <div className="lg:col-span-7">
-                  {!activeItem ? (
-                    <div className="rounded border border-dashed border-stone-300 bg-white p-6 text-center text-sm text-stone-500">
-                      Hover over an item on the left to preview its full description here.
-                    </div>
-                  ) : (
-                    <article className="sticky top-6 rounded border border-stone-300 bg-white p-6 shadow-md">
-                      <h2 className="text-2xl font-bold">{activeItem.name}</h2>
-                      <p className="mt-1 capitalize text-stone-600">
-                        {activeItem.type}
-                        {activeItem.rarity !== 'none' ? `, ${activeItem.rarity}` : ''}
-                        {activeItem.attunement
-                          ? ` (${activeItem.attunement.replace(
-                              'Requires attunement',
-                              'requires attunement',
-                            )})`
-                          : ''}
-                      </p>
-
-                      {facts.length > 0 && (
-                        <p className="mt-2 text-sm text-stone-600">{facts.join(' · ')}</p>
-                      )}
-
-                      <div className="mt-4 space-y-3 text-sm text-stone-700">
-                        {loadingDetailId === activeItem.id && !activeItem.description ? (
-                          <p className="text-stone-500">Loading description…</p>
-                        ) : (
-                          (activeItem.description ?? []).map((paragraph, index) => (
-                            <p key={index}>{paragraph}</p>
-                          ))
-                        )}
-                      </div>
-
-                      {activeItem.variants?.length > 0 && (
-                        <div className="mt-4">
-                          <h3 className="text-sm font-semibold">Variants</h3>
-                          <ul className="mt-1 list-disc pl-5 text-sm text-stone-700">
-                            {activeItem.variants.map((variant) => (
-                              <li key={variant}>{variant}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <p className="mt-5 text-xs text-stone-500">
-                        {activeItem.sourceName}
-                        {activeItem.page ? `, page ${activeItem.page}` : ''}
-                      </p>
-                    </article>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </section>
-  )
-}
+              <StatusMessage
